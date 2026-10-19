@@ -14,9 +14,10 @@ const upload = multer({
   limits: { fileSize: 5 * 1024 * 1024 },
 });
 
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok" });
-});
+const bestOf = (results) =>
+  results.reduce((a, b) => (b.confidence > a.confidence ? b : a));
+
+app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 
 app.post("/api/predict", upload.single("image"), async (req, res) => {
   try {
@@ -49,11 +50,65 @@ app.post("/api/predict", upload.single("image"), async (req, res) => {
 
 app.get("/api/history", async (_req, res) => {
   try {
-    const items = await Prediction.find().sort({ createdAt: -1 }).limit(20);
+    const items = await Prediction.find({ results: { $exists: true, $ne: [] } })
+      .sort({ createdAt: -1 })
+      .limit(100)
+      .lean();
     res.json(items);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Could not load history" });
+  }
+});
+
+app.delete("/api/history", async (_req, res) => {
+  await Prediction.deleteMany({});
+  res.json({ ok: true });
+});
+
+app.get("/api/stats", async (_req, res) => {
+  try {
+    const docs = await Prediction.find({ results: { $exists: true, $ne: [] } })
+      .sort({ createdAt: -1 })
+      .limit(1000)
+      .lean();
+
+    const classCounts = { ewaste: 0, metal: 0, organic: 0, plastic: 0 };
+    const confSum = {};
+    const confN = {};
+    const days = {};
+    let agree = 0;
+
+    for (const d of docs) {
+      const final = bestOf(d.results);
+      classCounts[final.label] = (classCounts[final.label] || 0) + 1;
+      if (d.agree) agree++;
+      for (const m of d.results) {
+        confSum[m.model] = (confSum[m.model] || 0) + m.confidence;
+        confN[m.model] = (confN[m.model] || 0) + 1;
+      }
+      const day = new Date(d.createdAt).toISOString().slice(0, 10);
+      days[day] = (days[day] || 0) + 1;
+    }
+
+    const avgConf = {};
+    for (const k in confSum) avgConf[k] = confSum[k] / confN[k];
+
+    const timeline = Object.keys(days)
+      .sort()
+      .slice(-7)
+      .map((date) => ({ date: date.slice(5), count: days[date] }));
+
+    res.json({
+      total: docs.length,
+      agreeRate: docs.length ? agree / docs.length : 0,
+      classCounts,
+      avgConf,
+      timeline,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Could not load stats" });
   }
 });
 
