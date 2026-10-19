@@ -10,9 +10,9 @@ import {
 
 const API = "http://localhost:5000/api";
 const CLASSES = ["ewaste", "metal", "organic", "plastic"];
-const COLORS = { ewaste: "#a78bfa", metal: "#38bdf8", organic: "#4ade80", plastic: "#fbbf24" };
+const COLORS = { ewaste: "#7a5c99", metal: "#38bdf8", organic: "#4f7d3a", plastic: "#fbbf24" };
 const NAMES = { resnet50: "ResNet50", vit: "ViT" };
-const MC = { resnet50: "#34d399", vit: "#818cf8" };
+const MC = { resnet50: "#1f6b45", vit: "#8a4b2a" };
 const TIPS = {
   ewaste: "Do not throw it in household trash. Hand it over to an authorized e-waste center or a take-back program, and remove the battery first.",
   metal: "Rinse and dry it, then place it in the dry/metal recycling bin. You can also give it to a scrap dealer.",
@@ -23,7 +23,7 @@ const BENCH = {
   resnet50: { acc: 95.99, f1: 0.9611, pc: [0.9779, 0.9568, 0.9661, 0.9436] },
   vit: { acc: 95.18, f1: 0.9531, pc: [0.9755, 0.9415, 0.9631, 0.9321] },
 };
-const tip = { background: "#0c1226", border: "1px solid rgba(255,255,255,.12)", borderRadius: 12, color: "#eaf0ff" };
+const tip = { background: "#fffdf8", border: "1px solid rgba(255,255,255,.12)", borderRadius: 12, color: "#1d1d1b" };
 const bestOf = (r) => r.reduce((a, b) => (b.confidence > a.confidence ? b : a));
 const pct = (v, d = 1) => (v * 100).toFixed(d) + "%";
 
@@ -50,7 +50,7 @@ function Ring({ value, color }) {
   return (
     <div className="ring">
       <svg width="150" height="150">
-        <circle cx="75" cy="75" r="62" fill="none" stroke="rgba(255,255,255,.08)" strokeWidth="11" />
+        <circle cx="75" cy="75" r="62" fill="none" stroke="rgba(0,0,0,.08)" strokeWidth="11" />
         <circle className="arc" cx="75" cy="75" r="62" fill="none" stroke={color} strokeWidth="11" strokeLinecap="round"
           strokeDasharray={C} strokeDashoffset={C * (1 - p)} style={{ filter: `drop-shadow(0 0 8px ${color})` }} />
       </svg>
@@ -210,7 +210,7 @@ export default function App() {
                         <ResponsiveContainer>
                           <BarChart data={cmp}>
                             <CartesianGrid stroke="rgba(255,255,255,.07)" vertical={false} />
-                            <XAxis dataKey="name" stroke="#8793b3" /><YAxis stroke="#8793b3" unit="%" />
+                            <XAxis dataKey="name" stroke="#6b675c" /><YAxis stroke="#8793b3" unit="%" />
                             <Tooltip contentStyle={tip} cursor={{ fill: "rgba(255,255,255,.05)" }} /><Legend />
                             <Bar dataKey="ResNet50" fill={MC.resnet50} radius={[8, 8, 0, 0]} />
                             <Bar dataKey="ViT" fill={MC.vit} radius={[8, 8, 0, 0]} />
@@ -227,9 +227,9 @@ export default function App() {
               <>
                 <div className="kpis stag">
                   <Kpi icon={Activity} color="#34d399" label="Total predictions" hint="saved in MongoDB"><Count to={stats?.total || 0} /></Kpi>
-                  <Kpi icon={Target} color="#38bdf8" label="Models agree" hint="ResNet50 = ViT"><Count to={(stats?.agreeRate || 0) * 100} suffix="%" /></Kpi>
-                  <Kpi icon={Trophy} color="#fbbf24" label="Best model" hint={`${BENCH.resnet50.acc}% test accuracy`}>ResNet50</Kpi>
-                  <Kpi icon={Layers} color={COLORS[topClass] || "#a78bfa"} label="Top class" hint="most frequently detected"><span style={{ textTransform: "capitalize" }}>{topClass}</span></Kpi>
+                  <Kpi icon={Target} color="#3d6f8e" label="Models agree" hint="ResNet50 = ViT"><Count to={(stats?.agreeRate || 0) * 100} suffix="%" /></Kpi>
+                  <Kpi icon={Trophy} color="#b8862b" label="Best model" hint={`${BENCH.resnet50.acc}% test accuracy`}>ResNet50</Kpi>
+                  <Kpi icon={Layers} color={COLORS[topClass] || "#7a5c99"} label="Top class" hint="most frequently detected"><span style={{ textTransform: "capitalize" }}>{topClass}</span></Kpi>
                 </div>
                 <div className="grid">
                   <div className="card"><h3>Class distribution</h3><p className="sub">Based on the final verdict</p>
@@ -240,9 +240,9 @@ export default function App() {
                   <div className="card"><h3>Average confidence</h3><p className="sub">Average confidence of each model so far</p>
                     <div style={{ height: 270 }}><ResponsiveContainer>
                       <BarChart data={Object.keys(NAMES).map((k) => ({ name: NAMES[k], value: +((stats?.avgConf?.[k] || 0) * 100).toFixed(1) }))}>
-                        <CartesianGrid stroke="rgba(255,255,255,.07)" vertical={false} />
+                        <CartesianGrid stroke="rgba(0,0,0,.08)" vertical={false} />
                         <XAxis dataKey="name" stroke="#8793b3" /><YAxis stroke="#8793b3" domain={[0, 100]} unit="%" />
-                        <Tooltip contentStyle={tip} cursor={{ fill: "rgba(255,255,255,.05)" }} />
+                        <Tooltip contentStyle={tip} cursor={{ fill: "rgba(0,0,0,.05)" }} />
                         <Bar dataKey="value" radius={[10, 10, 0, 0]}>{Object.keys(NAMES).map((k) => <Cell key={k} fill={MC[k]} />)}</Bar>
                       </BarChart></ResponsiveContainer></div></div>
                   <div className="card"><h3>Activity, last 7 days</h3><p className="sub">Predictions made per day</p>
@@ -257,7 +257,7 @@ export default function App() {
                   <div className="card"><h3>Per-class F1 radar</h3><p className="sub">Results on 1,473 test images</p>
                     <div style={{ height: 270 }}><ResponsiveContainer>
                       <RadarChart data={CLASSES.map((c, i) => ({ c, ResNet50: BENCH.resnet50.pc[i], ViT: BENCH.vit.pc[i] }))}>
-                        <PolarGrid stroke="rgba(255,255,255,.12)" /><PolarAngleAxis dataKey="c" stroke="#8793b3" />
+                        <PolarGrid stroke="rgba(0,0,0,.15)" /><PolarAngleAxis dataKey="c" stroke="#8793b3" />
                         <Radar dataKey="ResNet50" stroke={MC.resnet50} fill={MC.resnet50} fillOpacity={0.3} />
                         <Radar dataKey="ViT" stroke={MC.vit} fill={MC.vit} fillOpacity={0.25} />
                         <Legend /><Tooltip contentStyle={tip} /></RadarChart></ResponsiveContainer></div></div>
